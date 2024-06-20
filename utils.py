@@ -25,7 +25,7 @@ def save_adapted(save_dir, model, wandb, ep=None):
         wandb.save(save_dir + os.path.join(save_dir, 'SAC_discrete') + ".pth")
 
 def collect_random(env, dataset, num_samples=200):
-    state = env.reset()
+    state, *_ = env.reset()
     for _ in range(num_samples):
         action = env.action_space.sample()
         next_state, reward, done, *_ = env.step(action)

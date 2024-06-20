@@ -62,13 +62,18 @@ def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES,
         #     env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
 
         for i in range(1, episodes+1):
-            state = env.reset()
+            state, *_ = env.reset()
             episode_steps = 0
             rewards = 0
             while True:
                 action = agent.get_action(state)
                 steps += 1
                 next_state, reward, done, *_ = env.step(action)
+                # print('')
+                # print(np.shape(state))
+                # print(np.shape(action))
+                # print(np.shape(next_state))
+                # print('')
                 buffer.add(state, action, reward, next_state, done)
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = agent.learn(steps, buffer.sample(), gamma=0.99)
                 state = next_state
