@@ -1,17 +1,18 @@
 
 
 import gym
-import pybullet_envs
+# import pybullet_envs
 import numpy as np
 from collections import deque
 import torch
 import wandb
 import argparse
-from buffer import ReplayBuffer
+from SAC_discrete.buffer import ReplayBuffer
 import glob
-from utils import save, collect_random
+from SAC_discrete.utils import save_adapted, collect_random
 import random
-from agent import SAC
+from SAC_discrete.agent import SAC
+from params import *
 
 def get_config():
     parser = argparse.ArgumentParser(description='RL')
@@ -27,44 +28,47 @@ def get_config():
     args = parser.parse_args()
     return args
 
-def train(config):
-    np.random.seed(config.seed)
-    random.seed(config.seed)
-    torch.manual_seed(config.seed)
-    env = gym.make(config.env)
-    
-    env.seed(config.seed)
-    env.action_space.seed(config.seed)
+# def train(config):
+    # # Seed setting occurs in main.py, environment is already set
+    # np.random.seed(config.seed)
+    # random.seed(config.seed)
+    # torch.manual_seed(config.seed)
+    # env = gym.make(config.env)
+    #
+    # env.seed(config.seed)
+    # env.action_space.seed(config.seed)
+    #
+    # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-    device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES, save_every=100):
     
     steps = 0
     average10 = deque(maxlen=10)
     total_steps = 0
     
-    with wandb.init(project="SAC_Discrete", name=config.run_name, config=config):
+    with wandb.init(project="SAC_Discrete", name=run_name):
         
         agent = SAC(state_size=env.observation_space.shape[0],
-                         action_size=env.action_space.n,
-                         device=device)
+                    action_size=env.action_space.n,
+                    device=device)
 
         wandb.watch(agent, log="gradients", log_freq=10)
 
-        buffer = ReplayBuffer(buffer_size=config.buffer_size, batch_size=config.batch_size, device=device)
+        buffer = ReplayBuffer(buffer_size=buffer_size, batch_size=batch_size, device=device)
         
         collect_random(env=env, dataset=buffer, num_samples=10000)
         
-        if config.log_video:
-            env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
+        # if config.log_video:
+        #     env = gym.wrappers.Monitor(env, './video', video_callable=lambda x: x%10==0, force=True)
 
-        for i in range(1, config.episodes+1):
+        for i in range(1, episodes+1):
             state = env.reset()
             episode_steps = 0
             rewards = 0
             while True:
                 action = agent.get_action(state)
                 steps += 1
-                next_state, reward, done, _ = env.step(action)
+                next_state, reward, done, *_ = env.step(action)
                 buffer.add(state, action, reward, next_state, done)
                 policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = agent.learn(steps, buffer.sample(), gamma=0.99)
                 state = next_state
@@ -91,15 +95,23 @@ def train(config):
                        "Episode": i,
                        "Buffer size": buffer.__len__()})
 
-            if (i %10 == 0) and config.log_video:
-                mp4list = glob.glob('video/*.mp4')
-                if len(mp4list) > 1:
-                    mp4 = mp4list[-2]
-                    wandb.log({"gameplays": wandb.Video(mp4, caption='episode: '+str(i-10), fps=4, format="gif"), "Episode": i})
+            # if (i %10 == 0) and config.log_video:
+            #     mp4list = glob.glob('video/*.mp4')
+            #     if len(mp4list) > 1:
+            #         mp4 = mp4list[-2]
+            #         wandb.log({"gameplays": wandb.Video(mp4, caption='episode: '+str(i-10), fps=4, format="gif"), "Episode": i})
 
-            if i % config.save_every == 0:
-                save(config, save_name="SAC_discrete", model=agent.actor_local, wandb=wandb, ep=0)
+            # ## From SB3's SAC: # To implement
+            # self.logger.record("train/n_updates", self._n_updates, exclude="tensorboard")
+            # self.logger.record("train/ent_coef", np.mean(ent_coefs))
+            # self.logger.record("train/actor_loss", np.mean(actor_losses))
+            # self.logger.record("train/critic_loss", np.mean(critic_losses))
+            # if len(ent_coef_losses) > 0:
+            #     self.logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
 
-if __name__ == "__main__":
-    config = get_config()
-    train(config)
+            if i % save_every == 0:
+                save_adapted(save_dir="SAC_discrete", model=agent.actor_local, wandb=wandb, ep=0)
+
+# if __name__ == "__main__":
+#     config = get_config()
+#     train(config)
