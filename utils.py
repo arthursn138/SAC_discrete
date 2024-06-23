@@ -32,4 +32,4 @@ def collect_random(env, dataset, num_samples=200):
         dataset.add(state, action, reward, next_state, done)
         state = next_state
         if done:
-            state = env.reset()
+            state, *_ = env.reset()
