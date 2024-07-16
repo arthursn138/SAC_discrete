@@ -40,7 +40,7 @@ def get_config():
     #
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES, save_every=100):
+def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES, save_every=1000):
     
     steps = 0
     average10 = deque(maxlen=10)
@@ -115,7 +115,9 @@ def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES,
             #     self.logger.record("train/ent_coef_loss", np.mean(ent_coef_losses))
 
             if i % save_every == 0:
-                save_adapted(save_dir="SAC_discrete", model=agent.actor_local, wandb=wandb, ep=0)
+                save_adapted(save_dir=run_name, model=agent.actor_local, wandb=wandb, ep=i)
+
+        save_adapted(save_dir=run_name, model=agent.actor_local, wandb=wandb, ep=None)
 
 # if __name__ == "__main__":
 #     config = get_config()

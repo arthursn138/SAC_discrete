@@ -15,14 +15,14 @@ def save(args, save_name, model, wandb, ep=None):
 
 def save_adapted(save_dir, model, wandb, ep=None):
     import os
-    if not os.path.exists(os.path.join(save_dir, 'SAC_discrete')):
-        os.makedirs(save_dir)
-    if not ep == None:
-        torch.save(model.state_dict(), os.path.join(save_dir, 'SAC_discrete') + str(ep) + ".pth")
-        wandb.save(os.path.join(save_dir, 'SAC_discrete') + str(ep) + ".pth")
+    if not os.path.exists(os.path.join(save_dir, 'checkpoints')):
+        os.makedirs(os.path.join(save_dir, 'checkpoints'))
+    if ep is not None:
+        torch.save(model.state_dict(), os.path.join(save_dir, 'checkpoints', 'sacd_' + str(ep) + "_episodes.pth"))
+        wandb.save(os.path.join(save_dir, 'checkpoints', 'wandb_sacd_' + str(ep) + "_episodes.pth"), base_path=os.path.expanduser(HOME_DIR))
     else:
-        torch.save(model.state_dict(), os.path.join(save_dir, 'SAC_discrete') + ".pth")
-        wandb.save(save_dir + os.path.join(save_dir, 'SAC_discrete') + ".pth")
+        torch.save(model.state_dict(), os.path.join(save_dir, "trained_model_sacd.pth"))
+        wandb.save(os.path.join(save_dir, "wandb_trained_model_sacd.pth"), base_path=os.path.expanduser(HOME_DIR))
 
 def collect_random(env, dataset, num_samples=200):
     state, *_ = env.reset()
