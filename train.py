@@ -65,9 +65,15 @@ def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES,
             state, *_ = env.reset()
             episode_steps = 0
             rewards = 0
+            hidden = (torch.zeros(1, 1, 256).to(device), torch.zeros(1, 1, 256).to(device))   # matches hidden_size in agent.py
+
             while True:
-                action = agent.get_action(state)
+                if not USE_LSTM:
+                    action = agent.get_action(state)
+                else:
+                    action, hidden = agent.get_action_lstm(state, hidden)
                 steps += 1
+                print('action:', action)
                 next_state, reward, done, *_ = env.step(action)
                 # print('')
                 # print(np.shape(state))
@@ -75,7 +81,13 @@ def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES,
                 # print(np.shape(next_state))
                 # print('')
                 buffer.add(state, action, reward, next_state, done)
-                policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = agent.learn(steps, buffer.sample(), gamma=0.99)
+                if not USE_LSTM:
+                    policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha = agent.learn(
+                        steps, buffer.sample(), gamma=0.99)
+                else:
+                    policy_loss, alpha_loss, bellmann_error1, bellmann_error2, current_alpha, *_ = agent.learn_lstm(
+                        steps, buffer.sample(), gamma=0.99, hidden=hidden)
+
                 state = next_state
                 rewards += reward
                 episode_steps += 1

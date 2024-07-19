@@ -10,6 +10,7 @@ def hidden_init(layer):
     lim = 1. / np.sqrt(fan_in)
     return (-lim, lim)
 
+
 class Actor(nn.Module):
     """Actor (Policy) Model."""
 
@@ -99,3 +100,76 @@ class Critic(nn.Module):
         x = F.relu(self.fc1(state))
         x = F.relu(self.fc2(x))
         return self.fc3(x)
+
+
+class ActorLSTM(nn.Module):
+    """Actor (Policy) Model using LSTM."""
+
+    def __init__(self, state_size, action_size, hidden_size=128):
+        """Initialize parameters and build model.
+        Params
+        ======
+            state_size (int): Dimension of each state
+            action_size (int): Dimension of each action
+            fc1_units (int): Number of nodes in first hidden layer
+            fc2_units (int): Number of nodes in second hidden layer
+        """
+        super(ActorLSTM, self).__init__()
+        self.lstm = nn.LSTM(state_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, action_size)
+        self.softmax = nn.Softmax(dim=-1)
+
+    def forward(self, state, hidden):
+        lstm_out, hidden = self.lstm(state.unsqueeze(0), hidden)
+        x = self.fc(lstm_out[:, -1, :])
+        action_probs = self.softmax(x)
+        return action_probs, hidden
+
+    def evaluate(self, state, hidden, epsilon=1e-6):
+        action_probs, hidden = self.forward(state, hidden)
+        dist = Categorical(action_probs)
+        action = dist.sample().to(state.device)
+        z = action_probs == 0.0
+        z = z.float() * 1e-8
+        log_action_probabilities = torch.log(action_probs + z)
+        return action.detach().cpu(), action_probs, log_action_probabilities, hidden
+
+    def get_action(self, state, hidden):
+        action_probs, hidden = self.forward(state, hidden)
+        dist = Categorical(action_probs)
+        action = dist.sample().to(state.device)
+        z = action_probs == 0.0
+        z = z.float() * 1e-8
+        log_action_probabilities = torch.log(action_probs + z)
+        return action.detach().cpu(), action_probs, log_action_probabilities, hidden
+
+    def get_det_action(self, state, hidden):
+        print(f'state og shape: {state.shape}')
+        state = state.unsqueeze(0)
+        print(f'state: {state.shape}; h0: {hidden[0].shape}; c0: {hidden[1].shape}')
+        action_probs, hidden = self.forward(state, hidden)
+        dist = Categorical(action_probs)
+        action = dist.sample().to(state.device)
+        return action.detach().cpu(), hidden
+
+
+class CriticLSTM(nn.Module):
+    """Critic (Value) Model using LSTM."""
+
+    def __init__(self, state_size, action_size, hidden_size=128, seed=1):
+        """Initialize parameters and build model.
+        Params
+        ======
+            state_size (int): Dimension of each state
+            action_size (int): Dimension of each action
+            hidden_size (int): Number of nodes in the network layers
+            seed (int): Random seed
+        """
+        super(CriticLSTM, self).__init__()
+        self.lstm = nn.LSTM(state_size, hidden_size, batch_first=True)
+        self.fc = nn.Linear(hidden_size, action_size)
+
+    def forward(self, state, hidden):
+        lstm_out, hidden = self.lstm(state.unsqueeze(0), hidden)
+        x = self.fc(lstm_out[:, -1, :])
+        return x, hidden
