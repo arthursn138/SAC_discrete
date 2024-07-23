@@ -144,9 +144,9 @@ class ActorLSTM(nn.Module):
         return action.detach().cpu(), action_probs, log_action_probabilities, hidden
 
     def get_det_action(self, state, hidden):
-        print(f'state og shape: {state.shape}')
+        # print(f'state og shape: {state.shape}')
         state = state.unsqueeze(0)
-        print(f'state: {state.shape}; h0: {hidden[0].shape}; c0: {hidden[1].shape}')
+        # print(f'state: {state.shape}; h0: {hidden[0].shape}; c0: {hidden[1].shape}')
         action_probs, hidden = self.forward(state, hidden)
         dist = Categorical(action_probs)
         action = dist.sample().to(state.device)

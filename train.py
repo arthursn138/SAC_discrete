@@ -73,7 +73,7 @@ def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES,
                 else:
                     action, hidden = agent.get_action_lstm(state, hidden)
                 steps += 1
-                print('action:', action)
+                # print('action:', action)
                 next_state, reward, done, *_ = env.step(action)
                 # print('')
                 # print(np.shape(state))
