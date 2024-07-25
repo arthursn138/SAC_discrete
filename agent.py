@@ -91,7 +91,7 @@ class SAC(nn.Module):
         """Returns actions for given state as per current policy."""
         state = torch.from_numpy(state).float().to(self.device)
         assert USE_LSTM == True
-        print('getting action lstm')
+        # print('getting action lstm')
 
         with torch.no_grad():
             action, hidden = self.actor_local.get_det_action(state, hidden)
@@ -196,9 +196,10 @@ class SAC(nn.Module):
             experiences (Tuple[torch.Tensor]): tuple of (s, a, r, s', done) tuples
             gamma (float): discount factor
         """
+
         assert USE_LSTM == True, 'Method supposed to work only with USE_LSTM=True. Check params.py'
         states, actions, rewards, next_states, dones = experiences
-        print('learning with lstm')
+        # print('learning with lstm')
 
         # ---------------------------- update actor ---------------------------- #
         current_alpha = copy.deepcopy(self.alpha)
