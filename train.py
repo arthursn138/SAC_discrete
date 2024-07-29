@@ -40,17 +40,17 @@ def get_config():
     #
     # device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES, save_every=1000):
+def train(env, run_name, buffer_size=100_000, batch_size=256, episodes=EPISODES, save_every=1000, agent=None, start_step=0):
     
     steps = 0
     average10 = deque(maxlen=10)
     total_steps = 0
     
     with wandb.init(project="SAC_Discrete", name=run_name):
-        
-        agent = SAC(state_size=env.observation_space.shape[0],
-                    action_size=env.action_space.n,
-                    device=device)
+        if agent is None:
+            agent = SAC(state_size=env.observation_space.shape[0],
+                        action_size=env.action_space.n,
+                        device=device)
 
         wandb.watch(agent, log="gradients", log_freq=10)
 

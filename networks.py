@@ -121,6 +121,7 @@ class ActorLSTM(nn.Module):
 
     def forward(self, state, hidden):
         lstm_out, hidden = self.lstm(state.unsqueeze(0), hidden)
+        print(hidden.shape)
         x = self.fc(lstm_out[:, -1, :])
         action_probs = self.softmax(x)
         return action_probs, hidden
